@@ -1,0 +1,57 @@
+[build]
+  publish = "."
+  command = "npm install && export DATABASE_URL=\"$NETLIFY_DATABASE_URL\" && npx prisma generate && npx prisma db push --accept-data-loss && node scripts/seed-quran.js"
+
+[functions]
+  directory = "netlify/functions"
+  included_files = ["node_modules/.prisma/**", "prisma/schema.prisma"]
+
+[[redirects]]
+  from = "/api/auth/register"
+  to = "/.netlify/functions/auth-register"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/login"
+  to = "/.netlify/functions/auth-login"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/me"
+  to = "/.netlify/functions/auth-me"
+  status = 200
+  
+[[redirects]]
+  from = "/api/event-detail"
+  to = "/.netlify/functions/event-detail"
+  status = 200
+
+[[redirects]]
+  from = "/api/events"
+  to = "/.netlify/functions/events"
+  status = 200
+
+[[redirects]]
+  from = "/api/events/:id"
+  to = "/.netlify/functions/event-detail?id=:id"
+  status = 200
+
+[[redirects]]
+  from = "/api/progress"
+  to = "/.netlify/functions/progress"
+  status = 200
+
+[[redirects]]
+  from = "/api/progress/:eventId"
+  to = "/.netlify/functions/progress-list?eventId=:eventId"
+  status = 200
+
+[[redirects]]
+  from = "/api/kuran/search"
+  to = "/.netlify/functions/kuran-search"
+  status = 200
+
+[[redirects]]
+  from = "/api/kuran/wbw"
+  to = "/.netlify/functions/kuran-wbw"
+  status = 200

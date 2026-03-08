@@ -1,0 +1,534 @@
+/* ══════════════════════════════════════════════════════════════
+   KUR'AN ANALİZ — Yeni Görsel Kimlik
+   theme-modules.css değişkenlerini temel alır.
+   ══════════════════════════════════════════════════════════════ */
+@import url('../../css/theme-modules.css');
+
+/* ── TEMEL SIFIRLAMA ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: var(--mod-bg);
+  color: var(--mod-text-main);
+  font-family: 'Inter', 'Crimson Pro', -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+.ka-container { max-width: 960px; margin: 0 auto; padding: 0 2rem; }
+
+h1, h2, h3, h4 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 700;
+  color: var(--mod-text-main);
+}
+
+a { color: var(--mod-green); text-decoration: none; transition: color var(--mod-transition), opacity var(--mod-transition); }
+a:hover { opacity: 0.85; }
+
+/* ── NAVİGASYON ── */
+.ka-header {
+  padding: 2rem 0 1.5rem;
+  border-bottom: 1px solid var(--mod-border);
+  margin-bottom: 0;
+}
+
+.ka-nav-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.ka-logo {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--mod-text-main);
+  text-decoration: none;
+}
+.ka-logo:hover { text-decoration: none; opacity: 1; }
+.ka-logo small {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 400;
+  color: var(--mod-text-muted);
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ka-nav {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  list-style: none;
+}
+.ka-nav a {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  color: var(--mod-text-muted);
+  padding: 0.3rem 0;
+  border-bottom: 2px solid transparent;
+  transition: color var(--mod-transition), border-color var(--mod-transition);
+}
+.ka-nav a:hover,
+.ka-nav a.active {
+  color: var(--mod-text-main);
+  border-bottom-color: var(--mod-green);
+  text-decoration: none;
+  opacity: 1;
+}
+
+/* ── HERO / ARAMA ── */
+.ka-hero {
+  text-align: center;
+  padding: 5rem 2rem 3rem;
+}
+
+.ka-hero.ka-hero--compact {
+  padding: 2rem 2rem 1.5rem;
+}
+
+.ka-title {
+  font-size: 2.2rem;
+  margin-bottom: 0.6rem;
+  color: var(--mod-text-main);
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+.ka-hero--compact .ka-title { font-size: 1.5rem; margin-bottom: 0.3rem; }
+
+.ka-subtitle {
+  font-size: 1rem;
+  color: var(--mod-text-muted);
+  margin-bottom: 2.5rem;
+  font-family: 'Inter', 'Crimson Pro', sans-serif;
+}
+
+.ka-hero--compact .ka-subtitle { font-size: 0.88rem; margin-bottom: 1.2rem; }
+
+/* ── ARAMA — Clean, kenarlıksız, sadece alt çizgi ── */
+.ka-search-wrapper {
+  max-width: 600px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.ka-search-box {
+  display: flex;
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid var(--mod-border);
+  border-radius: 0;
+  overflow: visible;
+  transition: border-color 0.3s;
+}
+.ka-search-box:focus-within {
+  border-bottom-color: var(--mod-green);
+}
+
+.ka-search-input {
+  flex: 1;
+  padding: 0.85rem 0.5rem;
+  font-size: 1.05rem;
+  font-family: 'Inter', 'Crimson Pro', sans-serif;
+  border: none;
+  background: transparent;
+  color: var(--mod-text-main);
+  outline: none;
+}
+.ka-search-input::placeholder { color: var(--mod-text-muted); opacity: 0.55; }
+
+.ka-search-btn {
+  padding: 0.8rem 1.5rem;
+  background: var(--mod-accent);
+  color: var(--mod-bg);
+  border: none;
+  border-radius: var(--mod-radius-sm);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--mod-transition);
+  margin-bottom: 2px;
+}
+.ka-search-btn:hover { background: var(--mod-accent-hover); }
+
+/* ── ARAMA İPUCU ── */
+.ka-search-hint {
+  font-size: 0.72rem;
+  color: var(--mod-text-muted);
+  opacity: 0.6;
+  margin-top: 0.6rem;
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+}
+
+/* ── ÖNERİLER (AUTOCOMPLETE) ── */
+.ka-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.4rem;
+  background: var(--mod-surface);
+  border: 1px solid var(--mod-border);
+  border-radius: var(--mod-radius);
+  box-shadow: var(--mod-shadow-md);
+  display: none;
+  z-index: 100;
+  overflow: hidden;
+}
+.ka-suggestions.active { display: block; }
+
+.ka-suggestion-item {
+  padding: 0.8rem 1.5rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--mod-border);
+  transition: background 0.15s;
+  text-align: left;
+}
+.ka-suggestion-item:last-child { border-bottom: none; }
+.ka-suggestion-item:hover { background: var(--mod-green-soft); }
+
+.ka-suggestion-ref {
+  font-size: 0.72rem;
+  color: var(--mod-green);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 0.15rem;
+}
+.ka-suggestion-text {
+  font-size: 0.88rem;
+  color: var(--mod-text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── SONUÇ BİLGİSİ ── */
+.ka-results-info {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 2rem 1rem;
+  font-size: 0.88rem;
+  color: var(--mod-text-muted);
+}
+.ka-results-info strong { color: var(--mod-text-main); }
+
+/* ── AYET KARTLARI ── */
+.ka-results {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 2rem 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.ka-verse-card {
+  background: var(--mod-surface);
+  border: 1px solid var(--mod-border);
+  border-radius: var(--mod-radius);
+  padding: 2rem;
+  box-shadow: var(--mod-shadow-sm);
+  transition: transform var(--mod-transition), box-shadow var(--mod-transition);
+}
+.ka-verse-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--mod-shadow-hover);
+}
+
+.ka-verse-ref {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--mod-green);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.ka-verse-ref .ka-badge {
+  display: inline-block;
+  background: var(--mod-green-soft);
+  padding: 0.15rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  color: var(--mod-green);
+  font-weight: 600;
+}
+
+/* ── ARAPÇA METİN — normalden %20 büyük, harekeler rahat seçilsin ── */
+.ka-arabic-text {
+  font-family: 'Amiri', serif;
+  font-size: 2.04rem;       /* 1.7rem × 1.2 = %20 büyük */
+  line-height: 2.4;
+  color: var(--mod-arabic);
+  direction: rtl;
+  text-align: right;
+  padding: 1.2rem 0.5rem;
+  border-bottom: 1px solid var(--mod-border);
+  margin-bottom: 1rem;
+}
+
+/* ── KELİME KELİME ── */
+.ka-wbw-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 1rem;
+  font-size: 0.82rem;
+  font-family: 'Inter', sans-serif;
+  background: transparent;
+  border: 1px solid var(--mod-border);
+  border-radius: var(--mod-radius-sm);
+  color: var(--mod-text-muted);
+  cursor: pointer;
+  transition: all var(--mod-transition);
+  margin-bottom: 1rem;
+}
+.ka-wbw-toggle:hover {
+  border-color: var(--mod-green);
+  color: var(--mod-green);
+}
+
+.ka-words-grid {
+  display: flex;
+  flex-wrap: wrap-reverse;
+  direction: rtl;
+  gap: 0.6rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--mod-border);
+  margin-bottom: 1rem;
+  justify-content: center;
+}
+
+.ka-word-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.5rem 0.6rem;
+  background: var(--mod-bg);
+  border: 1px solid var(--mod-border);
+  border-radius: var(--mod-radius-sm);
+  transition: all var(--mod-transition);
+  cursor: default;
+  min-width: 75px;
+}
+.ka-word-item:hover {
+  border-color: var(--mod-green);
+  box-shadow: var(--mod-shadow-sm);
+  transform: translateY(-2px);
+}
+
+/* Kelime Arapça — %20 büyük */
+.ka-word-arabic {
+  font-family: 'Amiri', serif;
+  font-size: 1.56rem;       /* 1.3rem × 1.2 = %20 büyük */
+  color: var(--mod-arabic);
+  direction: rtl;
+}
+
+/* ── Kelime Transliterasyon ── */
+.ka-word-translit {
+  font-size: 0.6rem;
+  color: var(--mod-text-muted);
+  opacity: 0.7;
+  text-align: center;
+  direction: ltr;
+  font-style: italic;
+}
+
+/* ── Türkçe Kelime Anlamı (birincil) ── */
+.ka-word-meaning-tr {
+  font-size: 0.72rem;
+  color: var(--mod-text-main);
+  text-align: center;
+  direction: ltr;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+/* ── İngilizce Kelime Anlamı (ikincil, hover ile görünür) ── */
+.ka-word-meaning-en {
+  font-size: 0.6rem;
+  color: var(--mod-text-muted);
+  text-align: center;
+  direction: ltr;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0;
+  max-height: 0;
+  transition: opacity 0.25s ease, max-height 0.25s ease, margin 0.25s ease;
+  margin-top: 0;
+}
+
+.ka-word-item:hover .ka-word-meaning-en {
+  opacity: 0.55;
+  max-height: 1.5em;
+  margin-top: 0.15rem;
+}
+
+.ka-wbw-loading {
+  font-size: 0.82rem;
+  color: var(--mod-text-muted);
+  font-style: italic;
+  padding: 0.5rem 0;
+}
+
+/* ── TÜRKÇE MEAL ── */
+.ka-turkish-meal {
+  font-size: 1.02rem;
+  line-height: 1.8;
+  color: var(--mod-text-main);
+  padding-top: 0.3rem;
+}
+
+.ka-highlight-match {
+  background: var(--mod-yellow-soft);
+  padding: 0.1rem 0.2rem;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+/* ── DAHA FAZLA BUTONU ── */
+.ka-load-more-wrapper {
+  text-align: center;
+  padding: 1rem 0 2rem;
+}
+
+.ka-load-more {
+  display: inline-block;
+  padding: 0.65rem 2rem;
+  background: transparent;
+  color: var(--mod-accent);
+  border: 1px solid var(--mod-accent);
+  border-radius: var(--mod-radius-sm);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--mod-transition);
+}
+.ka-load-more:hover {
+  background: var(--mod-accent);
+  color: var(--mod-bg);
+}
+
+/* ── YÜKLEME & BOŞ ── */
+.ka-loading {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--mod-text-muted);
+  font-style: italic;
+  font-size: 0.95rem;
+}
+
+.ka-spinner {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--mod-border);
+  border-top-color: var(--mod-green);
+  border-radius: 50%;
+  animation: ka-spin 0.7s linear infinite;
+  margin-bottom: 0.8rem;
+}
+
+@keyframes ka-spin {
+  to { transform: rotate(360deg); }
+}
+
+.ka-empty {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--mod-text-muted);
+}
+.ka-empty h3 {
+  font-size: 1.15rem;
+  color: var(--mod-text-muted);
+  margin-bottom: 0.5rem;
+}
+.ka-empty p { font-size: 0.92rem; }
+
+.ka-error {
+  text-align: center;
+  padding: 1.5rem;
+  color: #b35a4a;
+  background: #fef2f0;
+  border: 1px solid #eed9d5;
+  border-radius: var(--mod-radius);
+  margin: 2rem auto;
+  max-width: 600px;
+  font-size: 0.92rem;
+}
+
+/* ── FOCuS STİLLERİ ── */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--mod-green);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ── ALT BİLGİ ── */
+.ka-footer {
+  border-top: 1px solid var(--mod-border);
+  padding: 2rem 0;
+  margin-top: 2rem;
+}
+.ka-footer .ka-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  color: var(--mod-text-muted);
+  font-family: 'Inter', sans-serif;
+}
+.ka-footer a { color: var(--mod-text-muted); }
+.ka-footer a:hover { color: var(--mod-text-main); text-decoration: none; }
+
+/* ── MOBİL ── */
+@media (max-width: 640px) {
+  .ka-hero { padding: 3rem 1rem 2rem; }
+  .ka-hero--compact { padding: 1.5rem 1rem 1rem; }
+  .ka-title { font-size: 1.5rem; }
+  .ka-hero--compact .ka-title { font-size: 1.2rem; }
+  .ka-subtitle { font-size: 0.88rem; margin-bottom: 1.5rem; }
+
+  .ka-search-input { padding: 0.75rem 0.3rem; font-size: 0.95rem; }
+  .ka-search-btn { padding: 0.75rem 1rem; font-size: 0.85rem; }
+
+  .ka-nav-wrapper { flex-direction: column; align-items: flex-start; }
+  .ka-nav { flex-wrap: wrap; gap: 0.8rem; }
+
+  .ka-verse-card { padding: 1.2rem; }
+  .ka-arabic-text { font-size: 1.56rem; line-height: 2; }
+  .ka-words-grid { gap: 0.4rem; }
+  .ka-word-item { min-width: 55px; padding: 0.4rem; }
+  .ka-word-arabic { font-size: 1.32rem; }
+
+  /* Mobilde hover olmadığı için İngilizce anlamı her zaman göster */
+  .ka-word-meaning-en {
+    opacity: 0.45;
+    max-height: 1.5em;
+    margin-top: 0.1rem;
+  }
+
+  .ka-results { padding: 0 1rem 2rem; }
+  .ka-results-info { padding: 0 1rem 0.8rem; }
+}

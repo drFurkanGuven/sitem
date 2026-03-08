@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+
+  events   BookEvent[]
+  progress ReadingProgress[]
+}
+
+model BookEvent {
+  id             String   @id @default(cuid())
+  bookName       String
+  totalPages     Int
+  selectedVerse  String?
+  selectedHadith String?
+  duration       String?
+  location       String?
+  createdBy      String
+  createdAt      DateTime @default(now())
+
+  creator  User              @relation(fields: [createdBy], references: [id])
+  progress ReadingProgress[]
+}
+
+model ReadingProgress {
+  id          String   @id @default(cuid())
+  userId      String
+  eventId     String
+  currentPage Int      @default(0)
+  notes       String?
+  updatedAt   DateTime @updatedAt
+
+  user  User      @relation(fields: [userId], references: [id])
+  event BookEvent @relation(fields: [eventId], references: [id])
+
+  @@unique([userId, eventId])
+}
+
+model QuranVerse {
+  id              Int     @id @default(autoincrement())
+  surahNo         Int     @map("surah_no")
+  ayahNo          Int     @map("ayah_no")
+  arabicText      String  @map("arabic_text") @db.Text
+  turkishMeal     String  @map("turkish_meal") @db.Text
+  surahNameAr     String  @map("surah_name_ar")
+  surahNameTr     String  @map("surah_name_tr")
+  transliteration String? @map("transliteration") @db.Text
+
+  @@unique([surahNo, ayahNo])
+  @@index([surahNo])
+  @@index([transliteration])
+  @@map("quran_verses")
+}
