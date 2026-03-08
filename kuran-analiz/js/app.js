@@ -3,6 +3,7 @@
 
   var API = '/api/kuran/search';
   var WBW_API = '/api/kuran/wbw';
+  var CORRELATE_API = '/api/kuran/correlate';
   var LIMIT = 20;
 
   var app = document.getElementById('app');
@@ -11,6 +12,7 @@
   var totalResults = 0;
   var allResults = [];
   var debounceTimer = null;
+  var strictMode = false;
 
   function init() {
     renderHero(false);
@@ -31,16 +33,31 @@
         '<div class="ka-search-wrapper">' +
           '<div class="ka-search-box">' +
             '<input type="text" id="searchInput" class="ka-search-input" ' +
-              'placeholder="Bir kelime arayın\u2026 (Örn: furkan, rahmet, \u0631\u062D\u0645)" ' +
+              'placeholder="Bir kelime arayın\u2026 (Örn: nur, rahmet, \u0631\u062D\u0645)" ' +
               'autocomplete="off" value="' + escapeHtml(currentQuery) + '">' +
             '<button class="ka-search-btn" id="searchBtn">Ara</button>' +
           '</div>' +
           '<div class="ka-suggestions" id="suggestions"></div>' +
+          '<div class="ka-filter-row">' +
+            '<label class="ka-toggle-label" for="strictToggle">' +
+              '<span class="ka-toggle-switch">' +
+                '<input type="checkbox" id="strictToggle" ' + (strictMode ? 'checked' : '') + '>' +
+                '<span class="ka-toggle-slider"></span>' +
+              '</span>' +
+              '<span class="ka-toggle-text">Tam Kelime Filtresi</span>' +
+              '<span class="ka-toggle-hint">' +
+                (strictMode
+                  ? 'Aktif — sadece bağımsız kelime eşleşmeleri gösterilir'
+                  : 'Pasif — kelime parçası eşleşmeleri de dahil edilir') +
+              '</span>' +
+            '</label>' +
+          '</div>' +
           '<div class="ka-search-hint">' +
-            'T\u00FCrk\u00E7e meal, transliterasyon ve Arap\u00E7a metin \u00FCzerinden e\u015F zamanl\u0131 arama yapar' +
+            'Türkçe meal, transliterasyon ve Arapça metin üzerinden eş zamanlı arama yapar' +
           '</div>' +
         '</div>' +
       '</section>' +
+      '<div id="correlationPanel"></div>' +
       '<div id="resultsInfo"></div>' +
       '<div class="ka-results" id="results"></div>';
 
@@ -54,6 +71,7 @@
   function bindSearchEvents() {
     var input = document.getElementById('searchInput');
     var btn = document.getElementById('searchBtn');
+    var toggle = document.getElementById('strictToggle');
 
     if (input) {
       input.addEventListener('input', function () {
@@ -82,10 +100,30 @@
         doSearch(input.value.trim());
       });
     }
+
+    if (toggle) {
+      toggle.addEventListener('change', function () {
+        strictMode = toggle.checked;
+        // Update hint text
+        var hint = document.querySelector('.ka-toggle-hint');
+        if (hint) {
+          hint.textContent = strictMode
+            ? 'Aktif — sadece bağımsız kelime eşleşmeleri gösterilir'
+            : 'Pasif — kelime parçası eşleşmeleri de dahil edilir';
+        }
+        // Re-search if there's an active query
+        if (currentQuery) {
+          doSearch(currentQuery);
+        }
+      });
+    }
   }
 
   function fetchSuggestions(q) {
-    fetch(API + '?q=' + encodeURIComponent(q) + '&limit=5')
+    var url = API + '?q=' + encodeURIComponent(q) + '&limit=5';
+    if (strictMode) url += '&strict=1';
+
+    fetch(url)
       .then(function (r) { return r.json(); })
       .then(function (data) {
         if (data.results && data.results.length > 0) {
@@ -105,7 +143,6 @@
     for (var i = 0; i < items.length; i++) {
       var v = items[i];
       var snippet = getSnippet(v.turkishMeal, q, 60);
-      // If match is from transliteration, show that instead
       if (!snippet && v.transliteration) {
         snippet = getSnippet(v.transliteration, q, 60);
       }
@@ -147,10 +184,15 @@
     renderHero(true);
     showLoading();
     fetchResults();
+    fetchCorrelation(q);
   }
 
   function fetchResults() {
-    fetch(API + '?q=' + encodeURIComponent(currentQuery) + '&limit=' + LIMIT + '&offset=' + currentOffset)
+    var url = API + '?q=' + encodeURIComponent(currentQuery) +
+      '&limit=' + LIMIT + '&offset=' + currentOffset;
+    if (strictMode) url += '&strict=1';
+
+    fetch(url)
       .then(function (r) { return r.json(); })
       .then(function (data) {
         if (data.error) {
@@ -165,6 +207,81 @@
       .catch(function (err) {
         showError('Bağlantı hatası: ' + err.message);
       });
+  }
+
+  function fetchCorrelation(q) {
+    var panel = document.getElementById('correlationPanel');
+    if (!panel) return;
+
+    panel.innerHTML =
+      '<div class="ka-correlation ka-correlation--loading">' +
+        '<div class="ka-correlation-header">' +
+          '<span class="ka-correlation-icon">◎</span> Korelasyon Analizi' +
+        '</div>' +
+        '<div class="ka-correlation-body">' +
+          '<div class="ka-spinner-small"></div> Hesaplanıyor\u2026' +
+        '</div>' +
+      '</div>';
+
+    var url = CORRELATE_API + '?q=' + encodeURIComponent(q) + '&top=12';
+    if (strictMode) url += '&strict=1';
+
+    fetch(url)
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.error) {
+          panel.innerHTML = '';
+          return;
+        }
+        renderCorrelation(data);
+      })
+      .catch(function () {
+        panel.innerHTML = '';
+      });
+  }
+
+  function renderCorrelation(data) {
+    var panel = document.getElementById('correlationPanel');
+    if (!panel || !data.correlations || data.correlations.length === 0) {
+      if (panel) panel.innerHTML = '';
+      return;
+    }
+
+    var maxPct = data.correlations[0].percentage;
+
+    var html =
+      '<div class="ka-correlation">' +
+        '<div class="ka-correlation-header">' +
+          '<span class="ka-correlation-icon">◎</span>' +
+          ' Korelasyon Analizi' +
+          '<span class="ka-correlation-meta">' +
+            '"' + escapeHtml(data.query) + '" ile birlikte en çok geçen kelimeler' +
+            ' <span class="ka-correlation-count">(' + data.totalVerses + ' ayet analiz edildi)</span>' +
+          '</span>' +
+        '</div>' +
+        '<div class="ka-correlation-body">' +
+          '<div class="ka-correlation-grid">';
+
+    for (var i = 0; i < data.correlations.length; i++) {
+      var c = data.correlations[i];
+      var barWidth = maxPct > 0 ? Math.max((c.percentage / maxPct) * 100, 8) : 8;
+
+      html +=
+        '<div class="ka-corr-item">' +
+          '<span class="ka-corr-word">' + escapeHtml(c.word) + '</span>' +
+          '<div class="ka-corr-bar-track">' +
+            '<div class="ka-corr-bar-fill" style="width:' + barWidth + '%"></div>' +
+          '</div>' +
+          '<span class="ka-corr-pct">%' + c.percentage + '</span>' +
+        '</div>';
+    }
+
+    html +=
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    panel.innerHTML = html;
   }
 
   function showLoading() {
@@ -191,8 +308,13 @@
     if (!container) return;
 
     if (info) {
+      var modeLabel = strictMode
+        ? '<span class="ka-mode-badge ka-mode-badge--strict">Tam Kelime</span>'
+        : '<span class="ka-mode-badge ka-mode-badge--wide">Geniş Arama</span>';
+
       info.innerHTML =
         '<div class="ka-results-info">' +
+          modeLabel +
           '<strong>' + totalResults + '</strong> ayet bulundu' +
           (currentQuery ? ' — "' + escapeHtml(currentQuery) + '"' : '') +
         '</div>';
@@ -202,7 +324,9 @@
       container.innerHTML =
         '<div class="ka-empty">' +
           '<h3>Sonuç bulunamadı</h3>' +
-          '<p>"' + escapeHtml(currentQuery) + '" ile eşleşen ayet bulunamadı. Farklı bir arama deneyin.</p>' +
+          '<p>"' + escapeHtml(currentQuery) + '" ile eşleşen ayet bulunamadı.' +
+          (strictMode ? ' Tam kelime filtresi aktif. Geniş aramayı deneyebilirsiniz.' : ' Farklı bir arama deneyin.') +
+          '</p>' +
         '</div>';
       return;
     }
@@ -315,7 +439,14 @@
     if (!query || !text) return escapeHtml(text);
     var safe = escapeHtml(text);
     var escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    var regex = new RegExp('(' + escaped + ')', 'gi');
+    var pattern;
+    if (strictMode) {
+      // In strict mode, highlight only whole-word matches
+      pattern = '\\b(' + escaped + ')\\b';
+    } else {
+      pattern = '(' + escaped + ')';
+    }
+    var regex = new RegExp(pattern, 'gi');
     return safe.replace(regex, '<span class="ka-highlight-match">$1</span>');
   }
 
