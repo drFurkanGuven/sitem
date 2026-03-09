@@ -52,6 +52,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/kuran/enhanced-search"
+  to = "/.netlify/functions/kuran-enhanced-search"
+  status = 200
+
+[[redirects]]
   from = "/api/kuran/wbw"
   to = "/.netlify/functions/kuran-wbw"
   status = 200
