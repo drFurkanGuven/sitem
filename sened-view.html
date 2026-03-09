@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sened Grafiği — furkanguven.space</title>
+<meta name="description" content="Hadis isnad zincirlerinin interaktif ağaç grafiği görselleştirmesi. Ravi zincirleri, cerh-tadil bilgileri ve tarik analizi."/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #FEFCF3;
+  --surface:   #F5F0E1;
+  --panel:     #EDE8D6;
+  --border:    #D4CDB8;
+  --border-hi: #B5AD9E;
+  --text:      #2D2A24;
+  --muted:     #7A7568;
+  --dim:       #A09882;
+
+  --pistachio:     #93C572;
+  --pistachio-dim: #6BA352;
+  --pistachio-bg:  #E8F5E0;
+  --gold:          #C9A84C;
+  --gold-dim:      #8A7430;
+
+  --header-bg:  #0D0D0B;
+  --header-txt: #E8E4D9;
+  --r: 6px;
+  --sh: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Crimson Pro', Georgia, serif;
+  min-height: 100vh;
+  line-height: 1.75;
+  overflow-x: hidden;
+}
+
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+a { color: var(--pistachio-dim); text-decoration: none; transition: color .2s; }
+a:hover { color: var(--text); }
+
+/* ── HEADER (koyu) ── */
+header {
+  background: var(--header-bg);
+  border-bottom: 1px solid #2A2A25;
+  padding: 1.4rem 0;
+}
+.nav-row {
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 1rem;
+  max-width: 1200px; margin: 0 auto; padding: 0 1.5rem;
+}
+.logo {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem; font-weight: 400;
+  color: var(--header-txt); letter-spacing: 0.05em;
+}
+.logo em { font-style: normal; color: var(--gold); }
+nav a {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem; color: #7A7568;
+  margin-left: 1.5rem; transition: color .2s;
+}
+nav a:hover { color: var(--gold); }
+nav a.active { color: var(--pistachio); }
+
+/* ── HERO ── */
+.sened-hero {
+  padding: 3rem 0 2rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+.sened-hero h1 {
+  font-family: 'Crimson Pro', serif;
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 300; color: var(--text);
+  margin-bottom: 0.3rem;
+}
+.sened-hero h1 strong { font-weight: 600; color: var(--pistachio-dim); }
+
+.hadith-arabic {
+  font-family: 'Amiri', serif;
+  font-size: 1.8rem; direction: rtl;
+  color: var(--gold); opacity: .7;
+  margin: 0.8rem 0 0.5rem;
+}
+.hadith-desc {
+  font-size: 0.95rem; color: var(--muted);
+  max-width: 700px; margin: 0.4rem auto 0;
+  font-style: italic;
+}
+.hadith-books {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem; color: var(--dim);
+  margin-top: 0.6rem;
+}
+
+/* ── CONTROLS BAR ── */
+.controls {
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 1rem;
+  margin-bottom: 1rem;
+}
+.legend {
+  display: flex; gap: 0.8rem; flex-wrap: wrap; align-items: center;
+}
+.legend-item {
+  display: flex; align-items: center; gap: 0.3rem;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
+  color: var(--muted);
+}
+.legend-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 1.5px solid rgba(0,0,0,0.15); flex-shrink: 0;
+}
+.legend-madar {
+  display: flex; align-items: center; gap: 0.3rem;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
+  color: var(--pistachio-dim); font-weight: 500;
+}
+.legend-madar .legend-dot {
+  box-shadow: 0 0 6px rgba(147,197,114,0.6);
+  border-color: var(--pistachio-dim);
+}
+
+.zoom-controls { display: flex; gap: 0.3rem; }
+.zoom-btn {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); color: var(--muted); cursor: pointer;
+  transition: all .2s;
+}
+.zoom-btn:hover { border-color: var(--pistachio); color: var(--pistachio-dim); background: var(--pistachio-bg); }
+
+/* Hadis seçici */
+.sened-selector {
+  display: flex; gap: 0.5rem; justify-content: center;
+  flex-wrap: wrap; margin-bottom: 1.5rem;
+}
+.sened-chip {
+  padding: 0.35rem 0.9rem;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
+  border: 1px solid var(--border); border-radius: 20px;
+  background: transparent; color: var(--muted); cursor: pointer;
+  transition: all .2s;
+}
+.sened-chip:hover { border-color: var(--pistachio); color: var(--pistachio-dim); }
+.sened-chip.on { background: var(--pistachio-bg); border-color: var(--pistachio); color: var(--pistachio-dim); font-weight: 500; }
+
+/* ── TREE CONTAINER ── */
+.tree-container {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  box-shadow: var(--sh);
+  overflow: hidden;
+  position: relative;
+  min-height: 500px;
+  margin-bottom: 2rem;
+  cursor: grab;
+}
+.tree-container:active { cursor: grabbing; }
+.tree-container svg { display: block; width: 100%; }
+
+/* D3 tree styles */
+.link {
+  fill: none;
+  stroke: var(--border-hi);
+  stroke-width: 1.8px;
+  stroke-opacity: 0.5;
+}
+.link-madar {
+  stroke: var(--pistachio);
+  stroke-width: 2.4px;
+  stroke-opacity: 0.7;
+}
+
+.node-circle {
+  cursor: pointer;
+  transition: r 0.2s;
+}
+.node-circle:hover { filter: brightness(1.15); }
+
+.node-label {
+  font-family: 'Crimson Pro', serif;
+  font-size: 12px;
+  fill: var(--text);
+  pointer-events: none;
+  text-anchor: middle;
+}
+.node-tabaka-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  fill: var(--dim);
+  pointer-events: none;
+  text-anchor: middle;
+}
+.node-madar-glow {
+  fill: none;
+  stroke: var(--pistachio);
+  stroke-width: 2;
+  opacity: 0.4;
+}
+.madar-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  fill: var(--pistachio-dim);
+  font-weight: 500;
+  text-anchor: middle;
+}
+
+/* ── TOOLTIP ── */
+.tooltip {
+  position: fixed;
+  padding: 14px 18px;
+  background: rgba(30, 28, 22, 0.96);
+  border: 1px solid var(--pistachio);
+  border-radius: 8px;
+  color: #F5F0E1;
+  font-family: 'Crimson Pro', serif;
+  font-size: 0.88rem;
+  max-width: 340px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s;
+  z-index: 1000;
+  line-height: 1.6;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+.tooltip.visible { opacity: 1; }
+.tt-name {
+  font-weight: 600; font-size: 1rem;
+  color: #F5F0E1; margin-bottom: 0.3rem;
+}
+.tt-tabaka {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  margin-bottom: 0.4rem;
+}
+.tt-vefat {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem; color: #A09882;
+  margin-bottom: 0.4rem;
+}
+.tt-bio { margin-bottom: 0.4rem; color: #D4CDB8; }
+.tt-cerh {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  padding: 0.4rem 0.6rem;
+  background: rgba(147,197,114,0.12);
+  border-left: 2px solid var(--pistachio);
+  border-radius: 0 4px 4px 0;
+  color: var(--pistachio);
+  margin-top: 0.3rem;
+}
+.tt-madar-tag {
+  display: inline-block;
+  background: var(--pistachio);
+  color: #1a1a17;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem; font-weight: 600;
+  padding: 0.1rem 0.5rem;
+  border-radius: 3px;
+  margin-left: 0.4rem;
+}
+
+/* ── INFO PANEL ── */
+.info-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+.info-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 1.2rem;
+}
+.info-card-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--dim);
+  margin-bottom: 0.3rem;
+}
+.info-card-value {
+  font-size: 1.6rem; font-weight: 300;
+  color: var(--pistachio-dim);
+}
+.info-card-desc {
+  font-size: 0.85rem; color: var(--muted);
+  margin-top: 0.2rem;
+}
+
+/* ── EMPTY / ERROR ── */
+.empty-state {
+  text-align: center; padding: 4rem 2rem;
+  color: var(--muted);
+}
+.empty-state .empty-icon {
+  font-size: 3rem; opacity: 0.3;
+  margin-bottom: 1rem;
+}
+.empty-state h2 {
+  font-weight: 400; font-size: 1.3rem;
+  margin-bottom: 0.5rem; color: var(--text);
+}
+
+/* ── DATASET BANNER ── */
+.dataset-banner {
+  background: var(--pistachio-bg);
+  border: 1px solid var(--pistachio);
+  border-radius: var(--r);
+  padding: 1rem 1.4rem;
+  margin-bottom: 2rem;
+  font-size: 0.88rem;
+  color: var(--pistachio-dim);
+}
+.dataset-banner a { color: var(--pistachio-dim); text-decoration: underline; }
+.dataset-banner strong { font-weight: 600; }
+
+/* ── FOOTER ── */
+footer {
+  background: var(--header-bg);
+  padding: 1.8rem 0;
+  margin-top: 2rem;
+}
+.f-inner {
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+  max-width: 1200px; margin: 0 auto; padding: 0 1.5rem;
+}
+.f-left { font-family: 'JetBrains Mono', monospace; font-size: .68rem; color: #7A7568; }
+.f-right { font-family: 'JetBrains Mono', monospace; font-size: .6rem; color: #4A4840; }
+.f-right a { color: #4A4840; }
+.f-right a:hover { color: var(--gold); }
+
+@media (max-width: 680px) {
+  .controls { flex-direction: column; align-items: flex-start; }
+  .legend { gap: 0.5rem; }
+  .sened-hero { padding: 2rem 0 1.5rem; }
+  .hadith-arabic { font-size: 1.4rem; }
+  .info-panel { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="nav-row">
+    <a href="index.html" class="logo">F.<em>G</em></a>
+    <nav>
+      <a href="makaleler.html">/makaleler</a>
+      <a href="laboratuvar.html">/laboratuvar</a>
+      <a href="kuran-analiz/">/kuran-analiz</a>
+      <a href="kitap-kulubu/">/kitap</a>
+      <a href="hadis-arama.html">/hadis</a>
+      <a href="sened-view.html" class="active">/sened</a>
+    </nav>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="sened-hero wrap">
+  <h1>Sened <strong>Grafiği</strong></h1>
+  <p class="hadith-arabic" id="arabicTitle"></p>
+  <p class="hadith-desc" id="hadithDesc"></p>
+  <p class="hadith-books" id="hadithBooks"></p>
+</div>
+
+<!-- HADIS SEÇİCİ -->
+<div class="wrap">
+  <div class="sened-selector" id="senedSelector"></div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls wrap">
+  <div class="legend" id="legend"></div>
+  <div class="zoom-controls">
+    <button class="zoom-btn" id="zoomIn" title="Yakınlaştır">+</button>
+    <button class="zoom-btn" id="zoomOut" title="Uzaklaştır">−</button>
+    <button class="zoom-btn" id="zoomReset" title="Sıfırla">↻</button>
+  </div>
+</div>
+
+<!-- TREE -->
+<div class="wrap">
+  <div class="tree-container" id="treeContainer">
+    <svg id="treeSvg"></svg>
+  </div>
+</div>
+
+<!-- INFO PANEL -->
+<div class="info-panel wrap" id="infoPanel"></div>
+
+<!-- DATASET BANNER -->
+<div class="wrap">
+  <div class="dataset-banner">
+    <strong>Veri kaynağı:</strong> Örnek isnad verileri, Kütüb-i Sitte hadis kaynaklarından derlenmiştir.
+    Genişletilmiş veri seti için: <a href="https://data.mendeley.com/datasets/gzprcr93zn/2" target="_blank" rel="noopener">Multi-IsnadSet (MIDS) — Mendeley Data</a>
+    (7.748 hadis, 2.092 râvî, 77.797 isnad kaydı — Sahih Muslim).
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="f-inner">
+    <div class="f-left">© 2026 Furkan Güven · /sened-view</div>
+    <div class="f-right">
+      görselleştirme: <a href="https://d3js.org" target="_blank" rel="noopener">D3.js v7</a>
+      &nbsp;·&nbsp; veri: Kütüb-i Sitte
+    </div>
+  </div>
+</footer>
+
+<!-- TOOLTIP -->
+<div class="tooltip" id="tooltip"></div>
+
+<!-- SCRIPTS -->
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="data/isnad-data.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ── Globals ── */
+var DB        = window.ISNAD_DB    || {};
+var TABAKA    = window.TABAKA_INFO || {};
+var MADAR_CLR = window.MADAR_COLOR || '#93C572';
+var tooltip   = document.getElementById('tooltip');
+var svgEl     = document.getElementById('treeSvg');
+var container = document.getElementById('treeContainer');
+var currentZoom = null;
+var currentSvg  = null;
+
+/* ── URL param ── */
+var params   = new URLSearchParams(window.location.search);
+var hadithId = params.get('id');
+
+/* ── Selector chips ── */
+var selBox = document.getElementById('senedSelector');
+var keys = Object.keys(DB);
+keys.forEach(function(k) {
+  var btn = document.createElement('button');
+  btn.className = 'sened-chip' + (k === hadithId ? ' on' : '');
+  btn.textContent = DB[k].title;
+  btn.dataset.id = k;
+  btn.addEventListener('click', function() {
+    loadHadith(k);
+    document.querySelectorAll('.sened-chip').forEach(function(c){ c.classList.toggle('on', c.dataset.id === k); });
+    history.replaceState(null, '', '?id=' + k);
+  });
+  selBox.appendChild(btn);
+});
+
+/* ── Fallback ── */
+if (!hadithId || !DB[hadithId]) {
+  hadithId = keys[0] || null;
+  if (hadithId) {
+    history.replaceState(null, '', '?id=' + hadithId);
+    document.querySelector('.sened-chip[data-id="'+hadithId+'"]')?.classList.add('on');
+  }
+}
+
+if (!hadithId) {
+  container.innerHTML = '<div class="empty-state"><div class="empty-icon">📜</div><h2>Sened verisi bulunamadı</h2><p>Hadis arama sayfasından bir hadis seçin.</p></div>';
+} else {
+  loadHadith(hadithId);
+}
+
+/* ═══════════════════════════════════════════════
+   Load and render a hadith isnad
+   ═══════════════════════════════════════════════ */
+function loadHadith(id) {
+  var data = DB[id];
+  if (!data) return;
+
+  /* Hero */
+  document.getElementById('arabicTitle').textContent = data.arabicTitle || '';
+  document.getElementById('hadithDesc').textContent  = data.description || '';
+  document.getElementById('hadithBooks').textContent  = (data.books || []).join(' · ');
+  document.title = data.title + ' — Sened Grafiği';
+
+  /* Legend */
+  buildLegend();
+
+  /* Info panel */
+  buildInfoPanel(data);
+
+  /* Tree */
+  renderTree(data.tree);
+}
+
+/* ── Legend ── */
+function buildLegend() {
+  var box = document.getElementById('legend');
+  box.innerHTML = '';
+  for (var k in TABAKA) {
+    var t = TABAKA[k];
+    var el = document.createElement('span');
+    el.className = 'legend-item';
+    el.innerHTML = '<span class="legend-dot" style="background:' + t.color + '"></span>' + t.label;
+    box.appendChild(el);
+  }
+  var madar = document.createElement('span');
+  madar.className = 'legend-madar';
+  madar.innerHTML = '<span class="legend-dot" style="background:' + MADAR_CLR + '"></span>Medâr (Ortak Râvî)';
+  box.appendChild(madar);
+}
+
+/* ── Info Panel ── */
+function buildInfoPanel(data) {
+  var panel = document.getElementById('infoPanel');
+  var root = d3.hierarchy(data.tree);
+  var nodes = root.descendants();
+  var leaves = root.leaves();
+  var depth = root.height;
+  var madarNode = nodes.find(function(n){ return n.data.isMadar; });
+  var tarikCount = leaves.length;
+
+  var cards = [
+    { label: 'Toplam Râvî',  value: nodes.length, desc: 'Zincirdeki tüm râvîler' },
+    { label: 'Tarik Sayısı',  value: tarikCount,    desc: 'Farklı rivâyet yolları' },
+    { label: 'Zincir Derinliği', value: depth + ' tabaka', desc: 'Nebî\'den musannife' },
+    { label: 'Medâr',         value: madarNode ? madarNode.data.name : '—', desc: 'Zincirlerin birleştiği ortak râvî' }
+  ];
+
+  panel.innerHTML = '';
+  cards.forEach(function(c) {
+    var div = document.createElement('div');
+    div.className = 'info-card';
+    div.innerHTML = '<div class="info-card-label">' + c.label + '</div>'
+      + '<div class="info-card-value">' + c.value + '</div>'
+      + '<div class="info-card-desc">' + c.desc + '</div>';
+    panel.appendChild(div);
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   D3.js Tree Rendering
+   ═══════════════════════════════════════════════ */
+function renderTree(treeData) {
+  /* Clear previous */
+  d3.select(svgEl).selectAll('*').remove();
+
+  var root = d3.hierarchy(treeData);
+  var nodeCount   = root.descendants().length;
+  var leafCount   = root.leaves().length;
+  var depth       = root.height;
+
+  /* Compute dynamic sizing */
+  var nodeSpacingX = Math.max(140, 180 - leafCount * 5);
+  var nodeSpacingY = 120;
+  var treeW = Math.max(leafCount * nodeSpacingX, 600);
+  var treeH = Math.max((depth + 1) * nodeSpacingY, 400);
+  var margin = { top: 60, right: 60, bottom: 60, left: 60 };
+  var svgW = treeW + margin.left + margin.right;
+  var svgH = treeH + margin.top + margin.bottom;
+
+  /* SVG setup */
+  var svg = d3.select(svgEl)
+    .attr('viewBox', '0 0 ' + svgW + ' ' + svgH)
+    .attr('width', svgW)
+    .attr('height', svgH);
+
+  /* Defs for glow filter */
+  var defs = svg.append('defs');
+  var filter = defs.append('filter').attr('id', 'madar-glow');
+  filter.append('feGaussianBlur').attr('stdDeviation', '4').attr('result', 'blur');
+  filter.append('feMerge').selectAll('feMergeNode')
+    .data(['blur', 'SourceGraphic']).enter()
+    .append('feMergeNode').attr('in', function(d){ return d; });
+
+  /* Gradient for links from madar */
+  var grad = defs.append('linearGradient')
+    .attr('id', 'madar-link-grad')
+    .attr('x1','0%').attr('y1','0%').attr('x2','0%').attr('y2','100%');
+  grad.append('stop').attr('offset','0%').attr('stop-color', MADAR_CLR).attr('stop-opacity','0.7');
+  grad.append('stop').attr('offset','100%').attr('stop-color', MADAR_CLR).attr('stop-opacity','0.2');
+
+  /* Main group with zoom/pan */
+  var g = svg.append('g').attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+  var zoom = d3.zoom()
+    .scaleExtent([0.3, 3])
+    .on('zoom', function(e) { g.attr('transform', e.transform); });
+  svg.call(zoom);
+  currentZoom = zoom;
+  currentSvg  = svg;
+
+  /* Initial center transform */
+  var containerW = container.clientWidth;
+  var scale = Math.min(1, (containerW - 40) / svgW);
+  var tx = (containerW - svgW * scale) / 2;
+  svg.call(zoom.transform, d3.zoomIdentity.translate(tx, 20).scale(scale));
+
+  /* Tree layout */
+  var tree = d3.tree().size([treeW, treeH]);
+  tree(root);
+
+  /* ── Links ── */
+  g.selectAll('.link')
+    .data(root.links())
+    .enter()
+    .append('path')
+    .attr('class', function(d) {
+      return d.source.data.isMadar ? 'link link-madar' : 'link';
+    })
+    .attr('d', function(d) {
+      return 'M' + d.source.x + ',' + d.source.y
+        + 'C' + d.source.x + ',' + (d.source.y + d.target.y) / 2
+        + ' ' + d.target.x + ',' + (d.source.y + d.target.y) / 2
+        + ' ' + d.target.x + ',' + d.target.y;
+    })
+    .style('stroke', function(d) {
+      return d.source.data.isMadar ? 'url(#madar-link-grad)' : null;
+    });
+
+  /* ── Nodes ── */
+  var nodes = g.selectAll('.node')
+    .data(root.descendants())
+    .enter()
+    .append('g')
+    .attr('class', 'node')
+    .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; });
+
+  /* Glow ring for MADAR */
+  nodes.filter(function(d){ return d.data.isMadar; })
+    .append('circle')
+    .attr('class', 'node-madar-glow')
+    .attr('r', 22)
+    .attr('filter', 'url(#madar-glow)');
+
+  /* Main circle */
+  nodes.append('circle')
+    .attr('class', 'node-circle')
+    .attr('r', function(d) {
+      if (d.data.isMadar) return 14;
+      if (d.data.tabaka === 'nabi') return 16;
+      if (d.data.tabaka === 'musannif') return 10;
+      return 10;
+    })
+    .attr('fill', function(d) {
+      if (d.data.isMadar) return MADAR_CLR;
+      return (TABAKA[d.data.tabaka] || {}).color || '#888';
+    })
+    .attr('stroke', function(d) {
+      if (d.data.isMadar) return '#6BA352';
+      return 'rgba(255,255,255,0.9)';
+    })
+    .attr('stroke-width', function(d) { return d.data.isMadar ? 3 : 2; })
+    .style('filter', function(d) { return d.data.isMadar ? 'url(#madar-glow)' : null; });
+
+  /* MADAR badge */
+  nodes.filter(function(d){ return d.data.isMadar; })
+    .append('text')
+    .attr('class', 'madar-badge')
+    .attr('dy', -22)
+    .text('★ MEDÂR');
+
+  /* Name label */
+  nodes.append('text')
+    .attr('class', 'node-label')
+    .attr('dy', function(d) {
+      if (d.data.isMadar) return 30;
+      if (d.data.tabaka === 'nabi') return 32;
+      return 26;
+    })
+    .text(function(d) { return d.data.name; });
+
+  /* Tabaka label */
+  nodes.append('text')
+    .attr('class', 'node-tabaka-label')
+    .attr('dy', function(d) {
+      if (d.data.isMadar) return 42;
+      if (d.data.tabaka === 'nabi') return 44;
+      return 38;
+    })
+    .text(function(d) { return (TABAKA[d.data.tabaka] || {}).label || ''; });
+
+  /* ── Tooltip events ── */
+  nodes.on('mouseenter', function(event, d) {
+    showTooltip(event, d.data);
+  })
+  .on('mousemove', function(event) {
+    moveTooltip(event);
+  })
+  .on('mouseleave', function() {
+    hideTooltip();
+  });
+
+  /* Entry animation */
+  g.attr('opacity', 0).transition().duration(600).attr('opacity', 1);
+}
+
+/* ═══════════════════════════════════════════════
+   Tooltip
+   ═══════════════════════════════════════════════ */
+function showTooltip(event, d) {
+  var tabakaInfo = TABAKA[d.tabaka] || {};
+  var html = '<div class="tt-name">' + esc(d.fullName || d.name);
+  if (d.isMadar) html += '<span class="tt-madar-tag">MEDÂR</span>';
+  html += '</div>';
+  html += '<div class="tt-tabaka" style="background:' + (tabakaInfo.color || '#888') + '22;color:' + (tabakaInfo.color || '#888') + '">' + (tabakaInfo.label || d.tabaka) + '</div>';
+  if (d.vefat) html += '<div class="tt-vefat">Vefat: ' + esc(d.vefat) + '</div>';
+  if (d.bio) html += '<div class="tt-bio">' + esc(d.bio) + '</div>';
+  if (d.cerhTadil) html += '<div class="tt-cerh">' + esc(d.cerhTadil) + '</div>';
+
+  tooltip.innerHTML = html;
+  tooltip.classList.add('visible');
+  moveTooltip(event);
+}
+
+function moveTooltip(event) {
+  var x = event.clientX + 16;
+  var y = event.clientY - 10;
+  var rect = tooltip.getBoundingClientRect();
+  if (x + rect.width > window.innerWidth - 10) x = event.clientX - rect.width - 16;
+  if (y + rect.height > window.innerHeight - 10) y = window.innerHeight - rect.height - 10;
+  if (y < 10) y = 10;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top  = y + 'px';
+}
+
+function hideTooltip() {
+  tooltip.classList.remove('visible');
+}
+
+/* ── Zoom controls ── */
+document.getElementById('zoomIn').addEventListener('click', function() {
+  if (currentSvg && currentZoom) currentSvg.transition().duration(300).call(currentZoom.scaleBy, 1.4);
+});
+document.getElementById('zoomOut').addEventListener('click', function() {
+  if (currentSvg && currentZoom) currentSvg.transition().duration(300).call(currentZoom.scaleBy, 0.7);
+});
+document.getElementById('zoomReset').addEventListener('click', function() {
+  if (currentSvg && currentZoom) {
+    var containerW = container.clientWidth;
+    var svgW = parseFloat(svgEl.getAttribute('viewBox').split(' ')[2]);
+    var scale = Math.min(1, (containerW - 40) / svgW);
+    var tx = (containerW - svgW * scale) / 2;
+    currentSvg.transition().duration(500).call(currentZoom.transform, d3.zoomIdentity.translate(tx, 20).scale(scale));
+  }
+});
+
+/* ── Util ── */
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+})();
+</script>
+</body>
+</html>

@@ -55,3 +55,8 @@
   from = "/api/kuran/wbw"
   to = "/.netlify/functions/kuran-wbw"
   status = 200
+
+[[redirects]]
+  from = "/api/isnad"
+  to = "/.netlify/functions/isnad"
+  status = 200

@@ -62,3 +62,35 @@ model QuranVerse {
   @@index([transliteration])
   @@map("quran_verses")
 }
+
+// ── Sened-Visualizer: Ravi (Hadis Nakledici) Modeli ──
+model Narrator {
+  id        String  @id @default(cuid())
+  name      String
+  nameAr    String? @map("name_ar")
+  fullName  String? @map("full_name")
+  tabaka    String  // nabi, sahabe, tabiin, tebe_tabiin, etba_tebe_tabiin, musannif
+  vefat     String?
+  bio       String? @db.Text
+  cerhTadil String? @map("cerh_tadil") @db.Text
+
+  teachers NarratorLink[] @relation("student")
+  students NarratorLink[] @relation("teacher")
+
+  @@index([tabaka])
+  @@index([name])
+  @@map("narrators")
+}
+
+// ── Sened-Visualizer: Ravi İlişki (Hoca-Talebe) Modeli ──
+model NarratorLink {
+  id        String @id @default(cuid())
+  teacherId String @map("teacher_id")
+  studentId String @map("student_id")
+
+  teacher Narrator @relation("teacher", fields: [teacherId], references: [id])
+  student Narrator @relation("student", fields: [studentId], references: [id])
+
+  @@unique([teacherId, studentId])
+  @@map("narrator_links")
+}
