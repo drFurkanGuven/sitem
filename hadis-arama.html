@@ -294,6 +294,16 @@ nav a:hover { color: var(--gold); }
 .btn-copy:hover { border-color: var(--gold-dim); color: var(--gold); }
 .btn-copy.ok { background: var(--green-bg); border-color: #1E3D28; color: var(--green); }
 
+/* Sened button */
+.btn-sened {
+  font-family: 'JetBrains Mono', monospace; font-size: .62rem;
+  padding: .22rem .55rem;
+  background: none; border: 1px solid #1E3D28; border-radius: 3px;
+  color: var(--green); cursor: pointer; transition: all .2s; flex-shrink: 0;
+  text-decoration: none; display: inline-flex; align-items: center; gap: .25rem;
+}
+.btn-sened:hover { background: var(--green-bg); border-color: var(--green); color: #8FD878; }
+
 /* ── DAILY BOX ── */
 .daily {
   border: 1px solid var(--gold-dim);
@@ -380,6 +390,7 @@ footer {
       <a href="laboratuvar.html">/laboratuvar</a>
       <a href="kuran-analiz/">/kuran-analiz</a>
       <a href="kitap-kulubu/">/kitap</a>
+      <a href="sened-view.html">/sened</a>
     </nav>
   </div>
 </header>
@@ -468,6 +479,7 @@ footer {
 </footer>
 </div><!-- /wrap -->
 
+<script src="data/isnad-data.js"></script>
 <script>
 (function(){
 'use strict';
@@ -593,7 +605,10 @@ function buildCard(h, q, i) {
     </div>
     <div class="card-bot">
       <span class="ref-txt">${h.ref ? refStr(h.ref) : ''}</span>
-      <button class="btn-copy" data-t="${escAttr(h.text)}">kopyala</button>
+      <div style="display:flex;gap:.4rem;align-items:center;">
+        ${(function(){ var sid = window.getIsnadId ? window.getIsnadId(h.bk, h.no, h.text) : null; return sid ? '<a class="btn-sened" href="sened-view.html?id='+sid+'" target="_blank">◎ Sened</a>' : ''; })()}
+        <button class="btn-copy" data-t="${escAttr(h.text)}">kopyala</button>
+      </div>
     </div>
   `;
 
