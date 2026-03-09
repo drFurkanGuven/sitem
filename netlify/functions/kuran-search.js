@@ -94,7 +94,6 @@ function buildSearchConditions(q) {
 
   const conditions = [
     { turkishMeal: { contains: q, mode: 'insensitive' } },
-    { surahNameTr: { contains: q, mode: 'insensitive' } },
   ];
 
   if (isArabic) {

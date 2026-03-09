@@ -19,6 +19,8 @@
   var surahStatsData = null;
   var chartInstance = null;
   var heatmapData = null;
+  var exactMatch = false;
+  var correlationData = null;
 
   // ── Arabic Utilities ──
   var TASHKEEL_RE = /[\u064B-\u0652\u0670\u06E1\u06E2\u06E5\u06E6\u06ED]/g;
@@ -100,6 +102,14 @@
       ? 'Bir k\u00F6k girin\u2026 (\u00D6rn: \u0631\u062D\u0645, \u0639\u0644\u0645, \u0643\u062A\u0628)'
       : 'Bir kelime aray\u0131n\u2026 (\u00D6rn: furkan, rahmet, \u0631\u062D\u0645\u0629)';
 
+    var exactChecked = exactMatch ? ' checked' : '';
+    var exactToggleHtml = currentMode === 'text'
+      ? '<label class="ka-exact-toggle" title="Sadece tam kelime e\u015Fle\u015Fmesi (k\u0131smi e\u015Fle\u015Fmeleri hari\u00E7 tutar)">' +
+          '<input type="checkbox" id="exactToggle"' + exactChecked + '>' +
+          '<span class="ka-exact-label">Tam Kelime</span>' +
+        '</label>'
+      : '';
+
     var html =
       '<section class="' + heroClass + '">' +
         '<h1 class="ka-title">Kur\'an K\u00F6k Analizi</h1>' +
@@ -122,6 +132,7 @@
               'autocomplete="off" value="' + escapeHtml(currentQuery) + '" dir="auto">' +
             '<button class="ka-search-btn" id="searchBtn">Ara</button>' +
           '</div>' +
+          exactToggleHtml +
           '<div class="ka-suggestions" id="suggestions"></div>' +
           '<div class="ka-search-hint" id="searchHint">' +
             (currentMode === 'root'
@@ -146,6 +157,7 @@
           : '') +
       '</section>' +
       '<div id="statsPanel"></div>' +
+      '<div id="correlationPanel"></div>' +
       '<div id="resultsInfo"></div>' +
       '<div class="ka-results" id="results"></div>';
 
@@ -153,6 +165,7 @@
     bindSearchEvents();
     bindModeToggle();
     bindRootChips();
+    bindExactToggle();
 
     var input = document.getElementById('searchInput');
     if (input) input.focus();
@@ -223,6 +236,20 @@
         var input = document.getElementById('searchInput');
         if (input) input.value = root;
         doSearch(root);
+      });
+    }
+  }
+
+  function bindExactToggle() {
+    var toggle = document.getElementById('exactToggle');
+    if (toggle) {
+      toggle.addEventListener('change', function () {
+        exactMatch = this.checked;
+        // Re-search if there is an active query
+        var input = document.getElementById('searchInput');
+        if (input && input.value.trim().length >= 2) {
+          doSearch(input.value.trim());
+        }
       });
     }
   }
@@ -340,19 +367,26 @@
     currentOffset = 0;
     allResults = [];
     surahStatsData = null;
+    correlationData = null;
 
     renderHero(true);
     showLoading();
 
-    // Fetch stats and results in parallel
+    var exactParam = (currentMode === 'text' && exactMatch) ? '&exact=true' : '';
+
+    // Fetch stats, results, and correlation in parallel
     Promise.all([
-      fetch(API + '?q=' + encodeURIComponent(q) + '&mode=' + currentMode + '&stats=true')
+      fetch(API + '?q=' + encodeURIComponent(q) + '&mode=' + currentMode + '&stats=true' + exactParam)
         .then(function (r) { return r.json(); }),
-      fetch(API + '?q=' + encodeURIComponent(q) + '&mode=' + currentMode + '&limit=' + LIMIT + '&offset=0')
+      fetch(API + '?q=' + encodeURIComponent(q) + '&mode=' + currentMode + '&limit=' + LIMIT + '&offset=0' + exactParam)
+        .then(function (r) { return r.json(); }),
+      fetch(API + '?q=' + encodeURIComponent(q) + '&mode=' + currentMode + '&correlation=true')
         .then(function (r) { return r.json(); })
+        .catch(function () { return { correlations: [] }; })
     ]).then(function (responses) {
       var statsData = responses[0];
       var searchData = responses[1];
+      var corrData = responses[2];
 
       if (searchData.error) {
         showError(searchData.error);
@@ -363,8 +397,10 @@
       totalResults = searchData.total;
       allResults = searchData.results || [];
       currentOffset = allResults.length;
+      correlationData = corrData.correlations || [];
 
       renderStats();
+      renderCorrelation();
       renderResults();
     }).catch(function (err) {
       showError('Ba\u011Flant\u0131 hatas\u0131: ' + err.message);
@@ -372,7 +408,8 @@
   }
 
   function fetchMoreResults() {
-    fetch(API + '?q=' + encodeURIComponent(currentQuery) + '&mode=' + currentMode + '&limit=' + LIMIT + '&offset=' + currentOffset)
+    var exactParam = (currentMode === 'text' && exactMatch) ? '&exact=true' : '';
+    fetch(API + '?q=' + encodeURIComponent(currentQuery) + '&mode=' + currentMode + '&limit=' + LIMIT + '&offset=' + currentOffset + exactParam)
       .then(function (r) { return r.json(); })
       .then(function (data) {
         if (data.error) {
@@ -591,8 +628,51 @@
   }
 
   /* ══════════════════════════════════════════════════════════════
-     LOADING & ERROR
+     KORELASYON ANALİZİ
      ══════════════════════════════════════════════════════════════ */
+  function renderCorrelation() {
+    var panel = document.getElementById('correlationPanel');
+    if (!panel || !correlationData || correlationData.length === 0) return;
+
+    var top15 = correlationData.slice(0, 15);
+    var maxCount = top15[0] ? top15[0].count : 1;
+
+    var html =
+      '<div class="ka-stats-panel">' +
+        '<div class="ka-correlation-container">' +
+          '<h3 class="ka-chart-title">Kelime Korelasyonu \u2014 "\u200E' + escapeHtml(currentQuery) + '\u200E" ile birlikte en \u00E7ok ge\u00E7en kelimeler</h3>' +
+          '<p class="ka-correlation-desc">Aranan kelimenin ge\u00E7ti\u011Fi ayetlerde en s\u0131k kullan\u0131lan di\u011Fer kelimeler</p>' +
+          '<div class="ka-correlation-grid">';
+
+    for (var i = 0; i < top15.length; i++) {
+      var item = top15[i];
+      var barWidth = Math.max(5, Math.round((item.count / maxCount) * 100));
+      html +=
+        '<div class="ka-corr-row">' +
+          '<span class="ka-corr-word">' + escapeHtml(item.word) + '</span>' +
+          '<div class="ka-corr-bar-wrapper">' +
+            '<div class="ka-corr-bar" style="width: ' + barWidth + '%"></div>' +
+          '</div>' +
+          '<span class="ka-corr-count">' + item.count + ' ayet (%' + item.percentage + ')</span>' +
+        '</div>';
+    }
+
+    html += '</div>';
+
+    // Show remaining as chips
+    if (correlationData.length > 15) {
+      html += '<div class="ka-corr-chips">';
+      for (var j = 15; j < correlationData.length; j++) {
+        html += '<span class="ka-corr-chip">' +
+          escapeHtml(correlationData[j].word) +
+          ' <small>(' + correlationData[j].count + ')</small></span>';
+      }
+      html += '</div>';
+    }
+
+    html += '</div></div>';
+    panel.innerHTML = html;
+  }
   function showLoading() {
     var results = document.getElementById('results');
     if (results) {
@@ -620,12 +700,13 @@
     if (!container) return;
 
     var modeLabel = currentMode === 'root' ? 'K\u00F6k' : 'Metin';
+    var exactLabel = (currentMode === 'text' && exactMatch) ? ' \u2014 Tam Kelime' : '';
 
     if (info) {
       info.innerHTML =
         '<div class="ka-results-info">' +
           '<strong>' + totalResults + '</strong> ayet bulundu' +
-          (currentQuery ? ' \u2014 "' + escapeHtml(currentQuery) + '" (' + modeLabel + ' Arama)' : '') +
+          (currentQuery ? ' \u2014 "' + escapeHtml(currentQuery) + '" (' + modeLabel + ' Arama' + exactLabel + ')' : '') +
         '</div>';
     }
 
@@ -815,10 +896,13 @@
 
   function containsRoot(normalizedWord, rootLetters) {
     // Check if the word contains all root letters in order
+    // with at most 2 characters between consecutive root letters
     var pos = 0;
     for (var i = 0; i < rootLetters.length; i++) {
       var found = normalizedWord.indexOf(rootLetters[i], pos);
       if (found === -1) return false;
+      // Check gap constraint: max 2 chars between consecutive root letters
+      if (i > 0 && (found - pos) > 2) return false;
       pos = found + 1;
     }
     return true;

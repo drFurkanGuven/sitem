@@ -210,6 +210,33 @@ a:hover { opacity: 0.85; }
   font-family: 'Inter', sans-serif;
 }
 
+/* ── TAM KELİME TOGGLE ── */
+.ka-exact-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  justify-content: center;
+  margin-top: 0.7rem;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  color: var(--mod-text-muted);
+  user-select: none;
+  transition: color var(--mod-transition);
+}
+.ka-exact-toggle:hover { color: var(--mod-text-main); }
+
+.ka-exact-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--mod-green);
+  cursor: pointer;
+}
+
+.ka-exact-label {
+  font-weight: 500;
+}
+
 /* ── POPÜLER KÖKLER ── */
 .ka-popular-roots {
   max-width: 700px;
@@ -704,6 +731,94 @@ a:hover { opacity: 0.85; }
   font-size: 0.92rem;
 }
 
+/* ── KORELASYON ANALİZİ ── */
+.ka-correlation-container {
+  background: var(--mod-surface);
+  border: 1px solid var(--mod-border);
+  border-radius: var(--mod-radius);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.ka-correlation-desc {
+  font-size: 0.78rem;
+  color: var(--mod-text-muted);
+  font-family: 'Inter', sans-serif;
+  margin-bottom: 1.2rem;
+  opacity: 0.7;
+}
+
+.ka-correlation-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ka-corr-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.ka-corr-word {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--mod-text-main);
+  min-width: 100px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.ka-corr-bar-wrapper {
+  flex: 1;
+  background: var(--mod-border);
+  height: 18px;
+  border-radius: 9px;
+  overflow: hidden;
+}
+
+.ka-corr-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--mod-green), var(--mod-green-soft));
+  border-radius: 9px;
+  transition: width 0.5s ease;
+}
+
+.ka-corr-count {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.72rem;
+  color: var(--mod-text-muted);
+  min-width: 90px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.ka-corr-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--mod-border);
+}
+
+.ka-corr-chip {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  background: var(--mod-bg);
+  border: 1px solid var(--mod-border);
+  border-radius: 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75rem;
+  color: var(--mod-text-main);
+}
+
+.ka-corr-chip small {
+  color: var(--mod-text-muted);
+  font-size: 0.65rem;
+}
+
 /* ── FOCUS STİLLERİ ── */
 a:focus-visible,
 button:focus-visible,
@@ -793,4 +908,8 @@ input:focus-visible {
   .ka-heatmap {
     grid-template-columns: repeat(10, 1fr);
   }
+
+  .ka-corr-word { min-width: 70px; font-size: 0.78rem; }
+  .ka-corr-count { min-width: 70px; font-size: 0.65rem; }
+  .ka-corr-row { gap: 0.5rem; }
 }
