@@ -29,6 +29,7 @@ exports.handler = async (event) => {
     0
   );
   const surah = parseInt(event.queryStringParameters?.surah) || null;
+  const strict = event.queryStringParameters?.strict === '1';
 
   if (!q && !surah) {
     return {
@@ -41,6 +42,10 @@ exports.handler = async (event) => {
   }
 
   try {
+    if (strict && q) {
+      return await handleStrictSearch(q, limit, offset, surah);
+    }
+
     let where = {};
 
     if (surah) {
@@ -86,8 +91,80 @@ exports.handler = async (event) => {
 };
 
 /**
- * Build multi-layer search conditions.
- * Searches across: turkishMeal, arabicText, transliteration, surahNameTr
+ * Strict (whole-word) search using PostgreSQL regex word boundaries.
+ * \m = word start, \M = word end in PostgreSQL regex.
+ */
+async function handleStrictSearch(q, limit, offset, surah) {
+  if (q.length < 2) {
+    return {
+      statusCode: 400,
+      headers: CORS,
+      body: JSON.stringify({
+        error: 'Arama sorgusu en az 2 karakter olmalıdır.',
+      }),
+    };
+  }
+
+  const isArabic = /[\u0600-\u06FF]/.test(q);
+  const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const wordPattern = `\\m${escapedQ}\\M`;
+
+  let surahCondition = '';
+  const params = [wordPattern];
+  let paramIndex = 2;
+
+  if (surah) {
+    surahCondition = `AND surah_no = $${paramIndex}`;
+    params.push(surah);
+    paramIndex++;
+  }
+
+  let searchCondition;
+  if (isArabic) {
+    searchCondition = `(turkish_meal ~* $1 OR surah_name_tr ~* $1 OR transliteration ~* $1 OR arabic_text ~ $1)`;
+  } else {
+    searchCondition = `(turkish_meal ~* $1 OR surah_name_tr ~* $1 OR transliteration ~* $1)`;
+  }
+
+  const countQuery = `SELECT COUNT(*) as total FROM quran_verses WHERE ${searchCondition} ${surahCondition}`;
+  const dataQuery = `SELECT * FROM quran_verses WHERE ${searchCondition} ${surahCondition} ORDER BY surah_no ASC, ayah_no ASC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+
+  params.push(limit, offset);
+
+  const [countResult, results] = await Promise.all([
+    prisma.$queryRawUnsafe(countQuery, ...params.slice(0, paramIndex - 1)),
+    prisma.$queryRawUnsafe(dataQuery, ...params),
+  ]);
+
+  const total = Number(countResult[0]?.total || 0);
+
+  const mappedResults = results.map((r) => ({
+    id: r.id,
+    surahNo: r.surah_no,
+    ayahNo: r.ayah_no,
+    arabicText: r.arabic_text,
+    turkishMeal: r.turkish_meal,
+    surahNameAr: r.surah_name_ar,
+    surahNameTr: r.surah_name_tr,
+    transliteration: r.transliteration,
+  }));
+
+  return {
+    statusCode: 200,
+    headers: CORS,
+    body: JSON.stringify({
+      results: mappedResults,
+      total,
+      query: q,
+      limit,
+      offset,
+      strict: true,
+    }),
+  };
+}
+
+/**
+ * Build multi-layer search conditions (wide/default mode).
  */
 function buildSearchConditions(q) {
   const isArabic = /[\u0600-\u06FF]/.test(q);
@@ -98,11 +175,9 @@ function buildSearchConditions(q) {
   ];
 
   if (isArabic) {
-    // Arabic script: also search in Arabic text
     conditions.push({ arabicText: { contains: q } });
   }
 
-  // Always search transliteration (Latin-script verse transliteration)
   conditions.push({
     transliteration: { contains: q, mode: 'insensitive' },
   });

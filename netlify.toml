@@ -52,6 +52,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/kuran/correlate"
+  to = "/.netlify/functions/kuran-correlate"
+  status = 200
+
+[[redirects]]
   from = "/api/kuran/wbw"
   to = "/.netlify/functions/kuran-wbw"
   status = 200
